@@ -59,6 +59,9 @@ DASHBOARD_HTML = """
             --unsafe-red: #b91c1c;
             --unsafe-bg: #fef2f2;
             --unsafe-border: #fecaca;
+            --idle-grey: #64748b;
+            --idle-bg: #f8fafc;
+            --idle-border: #e2e8f0;
         }
 
         * {
@@ -81,7 +84,7 @@ DASHBOARD_HTML = """
         header {
             background: var(--bg-base);
             border-bottom: 1px solid var(--border);
-            padding: 1rem 2.5rem;
+            padding: 0.9rem 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -94,21 +97,16 @@ DASHBOARD_HTML = """
         }
 
         .logo-mark {
-            width: 28px;
-            height: 28px;
-            background: var(--accent-coral);
-            border-radius: 6px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 0.9rem;
         }
 
         h1 {
             font-family: 'Newsreader', serif;
-            font-size: 1.4rem;
+            font-size: 1.45rem;
             font-weight: 500;
             color: var(--text-main);
             letter-spacing: -0.01em;
@@ -161,7 +159,7 @@ DASHBOARD_HTML = """
         }
 
         .presets-container {
-            padding: 1rem 2rem;
+            padding: 0.85rem 2rem;
             background: var(--bg-card);
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -275,6 +273,7 @@ DASHBOARD_HTML = """
             gap: 0.5rem;
         }
 
+        .status-badge.idle { background: var(--idle-bg); color: var(--idle-grey); border: 1px solid var(--idle-border); }
         .status-badge.safe { background: var(--safe-bg); color: var(--safe-green); border: 1px solid var(--safe-border); }
         .status-badge.review { background: var(--warning-bg); color: var(--warning-amber); border: 1px solid var(--warning-border); }
         .status-badge.unsafe { background: var(--unsafe-bg); color: var(--unsafe-red); border: 1px solid var(--unsafe-border); }
@@ -289,7 +288,7 @@ DASHBOARD_HTML = """
             font-size: 2.2rem;
             font-weight: 700;
             line-height: 1;
-            color: var(--text-main);
+            color: var(--idle-grey);
         }
 
         /* Checks Summary */
@@ -351,12 +350,12 @@ DASHBOARD_HTML = """
         }
 
         .remediation-card {
-            background: var(--safe-bg);
-            border: 1px solid var(--safe-border);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem 1.25rem;
             font-size: 0.88rem;
-            color: var(--safe-green);
+            color: var(--text-muted);
             line-height: 1.5;
         }
 
@@ -383,7 +382,15 @@ DASHBOARD_HTML = """
 
     <header>
         <div class="brand">
-            <div class="logo-mark">S</div>
+            <!-- Custom Geometric Shield SVG Logo for SkillGuard -->
+            <div class="logo-mark">
+                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 8 L85 24 V50 C85 70 70 86 50 92 C30 86 15 70 15 50 V24 L50 8 Z" fill="#da7756"/>
+                    <path d="M50 20 L72 32 V50 C72 64 61 76 50 81 C39 76 28 64 28 50 V32 L50 20 Z" fill="#ffffff" fill-opacity="0.25"/>
+                    <circle cx="50" cy="50" r="14" fill="#ffffff"/>
+                    <circle cx="50" cy="50" r="7" fill="#da7756"/>
+                </svg>
+            </div>
             <h1>SkillGuard</h1>
         </div>
         <div class="tagline">
@@ -445,38 +452,38 @@ DASHBOARD_HTML = """
                 <span class="section-title">Security Inspection Report</span>
             </div>
 
-            <!-- Verdict Hero Banner -->
+            <!-- Initial Idle State Verdict Hero Banner -->
             <div class="verdict-hero">
-                <div class="status-badge safe" id="status-badge">
-                    <span>✓</span> <span id="status-text">SAFE TO USE</span>
+                <div class="status-badge idle" id="status-badge">
+                    <span>○</span> <span id="status-text">AWAITING INSPECTION</span>
                 </div>
                 <div class="risk-score-badge">
-                    <span class="risk-number" id="risk-number" style="color:var(--safe-green);">0%</span>
+                    <span class="risk-number" id="risk-number">--</span>
                     <span style="font-size:0.68rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Overall Threat Risk</span>
                 </div>
             </div>
 
-            <!-- 5 Plain English Checks -->
+            <!-- Initial Checks Summary -->
             <div class="checks-grid">
                 <div class="check-card">
                     <span class="check-name">Code Safety</span>
-                    <span class="check-val" id="c1-val">Passed</span>
+                    <span class="check-val" id="c1-val">--</span>
                 </div>
                 <div class="check-card">
                     <span class="check-name">Instructions</span>
-                    <span class="check-val" id="c2-val">Passed</span>
+                    <span class="check-val" id="c2-val">--</span>
                 </div>
                 <div class="check-card">
                     <span class="check-name">Publisher</span>
-                    <span class="check-val" id="c3-val">Passed</span>
+                    <span class="check-val" id="c3-val">--</span>
                 </div>
                 <div class="check-card">
                     <span class="check-name">Chain Risk</span>
-                    <span class="check-val" id="c4-val">Passed</span>
+                    <span class="check-val" id="c4-val">--</span>
                 </div>
                 <div class="check-card">
                     <span class="check-name">AI Review</span>
-                    <span class="check-val" id="c5-val">Passed</span>
+                    <span class="check-val" id="c5-val">--</span>
                 </div>
             </div>
 
@@ -485,21 +492,21 @@ DASHBOARD_HTML = """
                 <div class="report-block">
                     <span class="block-heading">Active Tool Execution Sequence</span>
                     <div class="sequence-row" id="sequence-container">
-                        <span class="sequence-chip">calculator_skill</span>
+                        <span style="font-size:0.8rem; color:var(--text-muted); italic;">No tool execution sequence active.</span>
                     </div>
                 </div>
 
                 <div class="report-block">
                     <span class="block-heading">Security Findings</span>
                     <div id="findings-container" style="display:flex; flex-direction:column; gap:0.6rem;">
-                        <div class="reason-card">All 5 security checks passed cleanly. No malicious code or hidden prompts detected.</div>
+                        <div class="reason-card" style="color:var(--text-muted);">Select a test example above or click "Run Security Inspection" on the left to start the 5-layer audit.</div>
                     </div>
                 </div>
 
                 <div class="report-block">
                     <span class="block-heading">Recommended Action</span>
                     <div id="action-container">
-                        <div class="remediation-card">✓ Approved. This tool is safe for your AI agent to execute.</div>
+                        <div class="remediation-card">Analysis report and remediation steps will appear here after inspection.</div>
                     </div>
                 </div>
             </div>
@@ -555,6 +562,7 @@ os.system(decoded)`
             document.getElementById('author-id').value = data.author_id;
             document.getElementById('description').value = data.description;
             document.getElementById('code-body').value = data.code_body;
+            inspectSkill();
         }
 
         async function inspectSkill(e) {
@@ -643,6 +651,15 @@ os.system(decoded)`
             data.remediation_steps.forEach(rem => {
                 const item = document.createElement('div');
                 item.className = 'remediation-card';
+                if (verdict === 'MALICIOUS' || verdict === 'SUSPICIOUS') {
+                    item.style.background = 'var(--unsafe-bg)';
+                    item.style.borderColor = 'var(--unsafe-border)';
+                    item.style.color = 'var(--unsafe-red)';
+                } else {
+                    item.style.background = 'var(--safe-bg)';
+                    item.style.borderColor = 'var(--safe-border)';
+                    item.style.color = 'var(--safe-green)';
+                }
                 item.innerText = rem;
                 actionContainer.appendChild(item);
             });
