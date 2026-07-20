@@ -475,7 +475,7 @@ DASHBOARD_HTML = """
                     <span class="layer-score" id="l1-score">0%</span>
                 </div>
                 <div class="layer-card">
-                    <span class="layer-name">L2: Injection</span>
+                    <span class="layer-name">L2: ML / Injection</span>
                     <span class="layer-score" id="l2-score">0%</span>
                 </div>
                 <div class="layer-card">
