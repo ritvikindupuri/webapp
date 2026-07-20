@@ -172,8 +172,8 @@ DASHBOARD_HTML = """
             background: var(--bg-surface);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 0.4rem 0.85rem;
-            font-size: 0.78rem;
+            padding: 0.45rem 0.95rem;
+            font-size: 0.8rem;
             font-weight: 600;
             border-radius: 20px;
             cursor: pointer;
@@ -291,7 +291,7 @@ DASHBOARD_HTML = """
             color: var(--idle-grey);
         }
 
-        /* Checks Summary */
+        /* Interactive Checks Summary */
         .checks-grid {
             padding: 1.25rem 2rem;
             border-bottom: 1px solid var(--border);
@@ -303,6 +303,7 @@ DASHBOARD_HTML = """
 
         .check-card {
             background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 6px;
             padding: 0.6rem;
             display: flex;
@@ -310,6 +311,14 @@ DASHBOARD_HTML = """
             align-items: center;
             gap: 0.2rem;
             text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .check-card:hover {
+            border-color: var(--accent-coral);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(218, 119, 86, 0.12);
         }
 
         .check-name { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
@@ -376,13 +385,81 @@ DASHBOARD_HTML = """
             font-family: monospace;
             color: var(--text-main);
         }
+
+        /* Modal Overlay for Deep Layer Inspection */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(25, 25, 25, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.75rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-base);
+        }
+
+        .modal-title {
+            font-family: 'Newsreader', serif;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-body {
+            padding: 1.75rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .code-snippet-box {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.82rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div class="brand">
-            <!-- Custom Geometric Shield SVG Logo for SkillGuard -->
             <div class="logo-mark">
                 <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M50 8 L85 24 V50 C85 70 70 86 50 92 C30 86 15 70 15 50 V24 L50 8 Z" fill="#da7756"/>
@@ -463,27 +540,32 @@ DASHBOARD_HTML = """
                 </div>
             </div>
 
-            <!-- Initial Checks Summary -->
+            <!-- Interactive 5 Checks Grid -->
             <div class="checks-grid">
-                <div class="check-card">
+                <div class="check-card" onclick="openLayerModal('l1')">
                     <span class="check-name">Code Safety</span>
                     <span class="check-val" id="c1-val">--</span>
+                    <span style="font-size:0.6rem; color:var(--text-muted);">Details ↗</span>
                 </div>
-                <div class="check-card">
+                <div class="check-card" onclick="openLayerModal('l2')">
                     <span class="check-name">Instructions</span>
                     <span class="check-val" id="c2-val">--</span>
+                    <span style="font-size:0.6rem; color:var(--text-muted);">Details ↗</span>
                 </div>
-                <div class="check-card">
+                <div class="check-card" onclick="openLayerModal('l3')">
                     <span class="check-name">Publisher</span>
                     <span class="check-val" id="c3-val">--</span>
+                    <span style="font-size:0.6rem; color:var(--text-muted);">Details ↗</span>
                 </div>
-                <div class="check-card">
+                <div class="check-card" onclick="openLayerModal('l4')">
                     <span class="check-name">Chain Risk</span>
                     <span class="check-val" id="c4-val">--</span>
+                    <span style="font-size:0.6rem; color:var(--text-muted);">Details ↗</span>
                 </div>
-                <div class="check-card">
+                <div class="check-card" onclick="openLayerModal('t3')">
                     <span class="check-name">AI Review</span>
                     <span class="check-val" id="c5-val">--</span>
+                    <span style="font-size:0.6rem; color:var(--text-muted);">Details ↗</span>
                 </div>
             </div>
 
@@ -499,7 +581,7 @@ DASHBOARD_HTML = """
                 <div class="report-block">
                     <span class="block-heading">Security Findings</span>
                     <div id="findings-container" style="display:flex; flex-direction:column; gap:0.6rem;">
-                        <div class="reason-card" style="color:var(--text-muted);">Select a test example above or click "Run Security Inspection" on the left to start the 5-layer audit.</div>
+                        <div class="reason-card" style="color:var(--text-muted);">Select an example above or click "Run Security Inspection" on the left to start the 5-layer audit.</div>
                     </div>
                 </div>
 
@@ -513,7 +595,22 @@ DASHBOARD_HTML = """
         </div>
     </main>
 
+    <!-- In-Depth Layer Inspection Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeLayerModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Layer Inspection Details</h2>
+                <button class="modal-close" onclick="closeLayerModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <p>Select a check box after running an inspection to view full in-depth telemetry.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let currentAnalysisResult = null;
+
         const SAMPLES = {
             clean: {
                 skill_name: "calculator_skill",
@@ -550,9 +647,9 @@ os.system(decoded)`
             }
         };
 
-        function loadSample(key) {
+        async function loadSample(key) {
             if (key === 'chain_attack') {
-                runChainSimulation();
+                await runChainSimulation();
                 return;
             }
 
@@ -562,7 +659,8 @@ os.system(decoded)`
             document.getElementById('author-id').value = data.author_id;
             document.getElementById('description').value = data.description;
             document.getElementById('code-body').value = data.code_body;
-            inspectSkill();
+
+            await inspectSkill();
         }
 
         async function inspectSkill(e) {
@@ -583,8 +681,8 @@ os.system(decoded)`
                 body: JSON.stringify(payload)
             });
 
-            const resData = await resp.json();
-            renderReport(resData);
+            currentAnalysisResult = await resp.json();
+            renderReport(currentAnalysisResult);
         }
 
         function renderReport(data) {
@@ -611,11 +709,11 @@ os.system(decoded)`
 
             // Checks Status Summary
             const bd = data.layer_breakdown;
-            document.getElementById('c1-val').innerText = bd.layer1_rules_ast > 0 ? `${bd.layer1_rules_ast}%` : 'Passed';
-            document.getElementById('c2-val').innerText = bd.layer2_prompt_injection > 0 ? `${bd.layer2_prompt_injection}%` : 'Passed';
-            document.getElementById('c3-val').innerText = bd.layer3_provenance > 0 ? `${bd.layer3_provenance}%` : 'Passed';
-            document.getElementById('c4-val').innerText = bd.layer4_graph_composition > 0 ? `${bd.layer4_graph_composition}%` : 'Passed';
-            document.getElementById('c5-val').innerText = bd.tier3_claude_reasoning > 0 ? `${bd.tier3_claude_reasoning}%` : 'Passed';
+            document.getElementById('c1-val').innerText = bd.layer1_rules_ast > 0 ? `${bd.layer1_rules_ast}% Risk` : 'Passed';
+            document.getElementById('c2-val').innerText = bd.layer2_prompt_injection > 0 ? `${bd.layer2_prompt_injection}% Risk` : 'Passed';
+            document.getElementById('c3-val').innerText = bd.layer3_provenance > 0 ? `${bd.layer3_provenance}% Risk` : 'Passed';
+            document.getElementById('c4-val').innerText = bd.layer4_graph_composition > 0 ? `${bd.layer4_graph_composition}% Risk` : 'Passed';
+            document.getElementById('c5-val').innerText = bd.tier3_claude_reasoning > 0 ? `${bd.tier3_claude_reasoning}% Risk` : 'Passed';
 
             // Execution sequence
             const seqContainer = document.getElementById('sequence-container');
@@ -663,6 +761,85 @@ os.system(decoded)`
                 item.innerText = rem;
                 actionContainer.appendChild(item);
             });
+        }
+
+        // Open In-Depth Layer Inspection Modal
+        function openLayerModal(layerKey) {
+            const overlay = document.getElementById('modal-overlay');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            if (!currentAnalysisResult) {
+                title.innerText = "No Inspection Run Yet";
+                body.innerHTML = "<p>Run a security inspection first by selecting an example or clicking 'Run Security Inspection'.</p>";
+                overlay.style.display = 'flex';
+                return;
+            }
+
+            const bd = currentAnalysisResult.layer_breakdown;
+
+            if (layerKey === 'l1') {
+                title.innerText = "Layer 1: Code Safety & AST Inspection";
+                body.innerHTML = `
+                    <p><strong>Threat Score:</strong> ${bd.layer1_rules_ast}%</p>
+                    <p><strong>Inner Engine:</strong> Python Abstract Syntax Tree (AST) Parser & Unicode Steganography Scanner</p>
+                    <div class="code-snippet-box">
+Mechanics:
+1. Compiles Python source using ast.parse().
+2. Inspects AST Call nodes for forbidden calls: eval(), exec(), os.system(), subprocess.Popen(), socket.connect().
+3. Scans string literals for zero-width unicode spaces (\\u200b, \\u200c, \\u200d) used for steganographic evasion.
+                    </div>
+                `;
+            } else if (layerKey === 'l2') {
+                title.innerText = "Layer 2: Instruction Intent & Open-Source ML";
+                body.innerHTML = `
+                    <p><strong>Threat Score:</strong> ${bd.layer2_prompt_injection}%</p>
+                    <p><strong>Inner Engine:</strong> Local TF-IDF N-Gram Vectorizer & Cosine Similarity Intent Classifier</p>
+                    <div class="code-snippet-box">
+Mechanics:
+1. Vectorizes tool description text using character & word n-grams (1,3).
+2. Calculates cosine similarity against adversarial intent clusters (ADVERSARIAL_PROMPT_HIJACK, EXFILTRATION, COMMAND_INJECTION).
+3. Redacts system instruction overrides inline.
+                    </div>
+                `;
+            } else if (layerKey === 'l3') {
+                title.innerText = "Layer 3: Publisher & Supply Chain Trust";
+                body.innerHTML = `
+                    <p><strong>Threat Score:</strong> ${bd.layer3_provenance}%</p>
+                    <p><strong>Inner Engine:</strong> Cryptographic HMAC-SHA256 Provenance Verifier</p>
+                    <div class="code-snippet-box">
+Mechanics:
+1. Checks author ID against pre-registered trusted author keys.
+2. Compares payload HMAC-SHA256 signature to verify package integrity.
+                    </div>
+                `;
+            } else if (layerKey === 'l4') {
+                title.innerText = "Layer 4: Tool Combination & Sequence Risk";
+                body.innerHTML = `
+                    <p><strong>Threat Score:</strong> ${bd.layer4_graph_composition}%</p>
+                    <p><strong>Inner Engine:</strong> Session Directed Graph Sequence Tracker</p>
+                    <div class="code-snippet-box">
+Mechanics:
+1. Tracks execution flow across agent sessions: Skill A -> Skill B -> Skill C.
+2. Detects multi-stage attack chains (e.g. FileRead -> Compress -> Outbound HTTP Transfer).
+                    </div>
+                `;
+            } else if (layerKey === 't3') {
+                title.innerText = "Tier 3: AI Deep Review (Claude 3.5 Sonnet)";
+                body.innerHTML = `
+                    <p><strong>Threat Score:</strong> ${bd.tier3_claude_reasoning}%</p>
+                    <p><strong>Inner Engine:</strong> Anthropic Claude 3.5 Sonnet API</p>
+                    <div class="code-snippet-box">
+${JSON.stringify(currentAnalysisResult.claude_details || {}, null, 2)}
+                    </div>
+                `;
+            }
+
+            overlay.style.display = 'flex';
+        }
+
+        function closeLayerModal(e) {
+            document.getElementById('modal-overlay').style.display = 'none';
         }
 
         async function runChainSimulation() {
