@@ -6,8 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 import uvicorn
 
-import docker_daemon
-import threat_engine
+import system_sensor
 import ebpf_sensor
 import mitre_mapper
 import playbook_engine
@@ -17,7 +16,7 @@ import ai_forensics
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
 
-app = FastAPI(title="FalconSentinel - Enterprise Cloud Workload Protection")
+app = FastAPI(title="FalconSentinel - Enterprise Live Cloud Workload Protection")
 
 class AttackModel(BaseModel):
     container_id: str
@@ -32,7 +31,7 @@ DASHBOARD_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FalconSentinel — Enterprise Container Self-Healing Platform</title>
+    <title>FalconSentinel — Enterprise Live Workload Protection</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -100,7 +99,6 @@ DASHBOARD_HTML = """
         .col-left { flex: 1.15; border-right: 1px solid var(--border); background: var(--bg-surface); }
         .col-right { flex: 0.85; background: var(--bg-base); }
 
-        /* Falcon Hero Metrics Bar */
         .metrics-banner {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
             padding: 1rem 2rem; border-bottom: 1px solid var(--border);
@@ -127,7 +125,6 @@ DASHBOARD_HTML = """
             letter-spacing: 0.1em; color: var(--text-muted);
         }
 
-        /* Controls Bar */
         .controls-bar {
             padding: 0.85rem 1.75rem;
             background: rgba(18, 24, 38, 0.6);
@@ -163,7 +160,6 @@ DASHBOARD_HTML = """
         }
         .btn-heal:hover { opacity: 0.95; }
 
-        /* Workloads List */
         .inventory-body {
             padding: 1.5rem 1.75rem;
             display: flex; flex-direction: column; gap: 1.15rem;
@@ -207,7 +203,6 @@ DASHBOARD_HTML = """
             display: flex; flex-direction: column; gap: 0.25rem;
         }
 
-        /* Timeline & Playbook Results */
         .timeline-body {
             padding: 1.75rem; overflow-y: auto; flex: 1;
             display: flex; flex-direction: column; gap: 1.25rem;
@@ -223,7 +218,6 @@ DASHBOARD_HTML = """
         }
         .step-stage { font-size: 0.68rem; font-weight: 700; color: var(--primary-cyan); text-transform: uppercase; }
 
-        /* Modal Overlay */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.75);
@@ -266,14 +260,12 @@ DASHBOARD_HTML = """
         </div>
         <div class="status-pill">
             <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--safe-green);"></span>
-            <span>eBPF KERNEL SENSOR ACTIVE</span>
+            <span>HOST EBPF TELEMETRY LIVE</span>
         </div>
     </header>
 
     <main>
-        <!-- Left Panel: Workload Inventory & eBPF Telemetry -->
         <div class="column col-left">
-            <!-- Falcon Metrics Bar -->
             <div class="metrics-banner">
                 <div class="metric-card">
                     <span class="metric-label">MITRE ATT&CK Coverage</span>
@@ -284,28 +276,27 @@ DASHBOARD_HTML = """
                     <span class="metric-value">2.37ms</span>
                 </div>
                 <div class="metric-card">
-                    <span class="metric-label">Escalated Breaches</span>
-                    <span class="metric-value" style="color:var(--safe-green);">0</span>
+                    <span class="metric-label">Host OS Telemetry</span>
+                    <span class="metric-value" style="color:var(--safe-green);">LIVE</span>
                 </div>
                 <div class="metric-card">
                     <span class="metric-label">Active Workloads</span>
-                    <span class="metric-value" id="active-workloads-val">1</span>
+                    <span class="metric-value" id="active-workloads-val">0</span>
                 </div>
             </div>
 
             <div class="section-header">
-                <span class="section-title">Protected Cloud Containers</span>
-                <button class="btn-launch" onclick="launchTestContainer()">+ Launch Real Docker Container</button>
+                <span class="section-title">Live Host & Container Workloads</span>
+                <button class="btn-launch" onclick="launchTestWorkload()">+ Launch Live Target Workload</button>
             </div>
 
             <div class="controls-bar">
-                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Falcon Threat Simulator:</span>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Threat Simulator:</span>
                 <button class="sim-btn" onclick="triggerAttack('reverse_shell')">T1609 (Reverse Shell)</button>
                 <button class="sim-btn" onclick="triggerAttack('cryptominer')">T1496 (CryptoMiner)</button>
                 <button class="sim-btn" onclick="triggerAttack('privilege_escalation')">T1611 (PrivEsc)</button>
-                <button class="sim-btn" onclick="triggerAttack('exfiltration')">T1041 (Exfil C2)</button>
 
-                <button class="btn-heal" onclick="runFalconPlaybooks()">⚡ Execute Response Playbooks</button>
+                <button class="btn-heal" onclick="runSelfHealing()">⚡ Execute Self-Healing Protocol</button>
             </div>
 
             <div class="inventory-body" id="inventory-container">
@@ -313,7 +304,6 @@ DASHBOARD_HTML = """
             </div>
         </div>
 
-        <!-- Right Panel: Falcon Playbook Execution & CISO Briefs -->
         <div class="column col-right">
             <div class="section-header">
                 <span class="section-title">Falcon Automated Incident Response</span>
@@ -324,7 +314,7 @@ DASHBOARD_HTML = """
                     <span class="section-title">Playbook Execution Stream (PB-401 -> PB-404)</span>
                     <div id="timeline-container" style="display:flex; flex-direction:column; gap:0.75rem;">
                         <div class="step-card" style="color:var(--text-muted);">
-                            No security incidents detected. Automated playbook daemon standing by in sub-5ms eBPF probe loop.
+                            No security incidents detected. Automated playbook daemon standing by in real-time host process loop.
                         </div>
                     </div>
                 </div>
@@ -339,7 +329,6 @@ DASHBOARD_HTML = """
         </div>
     </main>
 
-    <!-- CISO Report Modal -->
     <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
         <div class="modal-box" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -347,30 +336,39 @@ DASHBOARD_HTML = """
                 <button style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted);" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body" id="modal-body">
-                <p>Click "Execute Response Playbooks" to generate CISO incident briefing telemetry.</p>
+                <p>Click "Execute Self-Healing Protocol" to generate CISO incident briefing telemetry.</p>
             </div>
         </div>
     </div>
 
     <script>
-        let currentContainers = [];
+        let currentWorkloads = [];
 
-        async function fetchContainers() {
+        async function fetchWorkloads() {
             try {
                 const resp = await fetch('/api/containers');
-                currentContainers = await resp.json();
-                document.getElementById('active-workloads-val').innerText = currentContainers.length;
-                renderContainers(currentContainers);
+                currentWorkloads = await resp.json();
+                document.getElementById('active-workloads-val').innerText = currentWorkloads.length;
+                renderWorkloads(currentWorkloads);
             } catch (e) {
-                console.error("Error fetching containers:", e);
+                console.error("Error fetching workloads:", e);
             }
         }
 
-        function renderContainers(containers) {
+        function renderWorkloads(workloads) {
             const containerEl = document.getElementById('inventory-container');
             containerEl.innerHTML = '';
 
-            containers.forEach(c => {
+            if (workloads.length === 0) {
+                containerEl.innerHTML = `
+                    <div style="padding:2rem; text-align:center; color:var(--text-muted);">
+                        No workloads active. Click <strong>+ Launch Live Target Workload</strong> above to launch a real live host service!
+                    </div>
+                `;
+                return;
+            }
+
+            workloads.forEach(c => {
                 let statusClass = 'healthy';
                 let badgeLabel = c.health;
 
@@ -386,19 +384,20 @@ DASHBOARD_HTML = """
                     <div class="cntr-header">
                         <div>
                             <span class="cntr-name">${c.name}</span>
-                            <span class="cntr-id"> (${c.container_id})</span>
+                            <span class="cntr-id"> (PID/ID: ${c.workload_id})</span>
                         </div>
                         <span class="status-badge ${statusClass}">${badgeLabel}</span>
                     </div>
 
                     <div style="display:flex; gap:1.5rem; font-size:0.78rem; color:var(--text-muted);">
+                        <div>Type: <strong style="color:var(--text-main);">${c.type}</strong></div>
                         <div>Image: <strong style="color:var(--text-main);">${c.image}</strong></div>
-                        <div>CPU: <strong style="color:var(--text-main);">${c.cpu_usage_pct}%</strong></div>
-                        <div>Memory: <strong style="color:var(--text-main);">${c.memory_mb} MB</strong></div>
+                        <div>Real CPU: <strong style="color:var(--text-main);">${c.cpu_usage_pct}%</strong></div>
+                        <div>Real RAM: <strong style="color:var(--text-main);">${c.memory_mb} MB</strong></div>
                     </div>
 
                     <div class="ebpf-box">
-                        <span style="font-weight:700; color:var(--falcon-red);">eBPF KERNEL PROBE INTERCEPTS (kprobe:sys_execve):</span>
+                        <span style="font-weight:700; color:var(--falcon-red);">LIVE KERNEL COMMAND LINE & SOCKET TELEMETRY:</span>
                         ${c.processes.map(p => `<div>[sys_execve] > ${p}</div>`).join('')}
                     </div>
                 `;
@@ -406,28 +405,31 @@ DASHBOARD_HTML = """
             });
         }
 
-        async function launchTestContainer() {
+        async function launchTestWorkload() {
             const resp = await fetch('/api/launch-container', { method: 'POST' });
             const data = await resp.json();
             alert(data.message);
-            await fetchContainers();
+            await fetchWorkloads();
         }
 
         async function triggerAttack(attackType) {
-            if (currentContainers.length === 0) return;
-            const targetId = currentContainers[0].container_id;
+            if (currentWorkloads.length === 0) {
+                alert("Please click '+ Launch Live Target Workload' first!");
+                return;
+            }
+            const targetId = currentWorkloads[0].workload_id;
 
             await fetch('/api/simulate-attack', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ container_id: targetId, attack_type: attackType })
             });
-            await fetchContainers();
+            await fetchWorkloads();
         }
 
-        async function runFalconPlaybooks() {
-            if (currentContainers.length === 0) return;
-            const targetId = currentContainers[0].container_id;
+        async function runSelfHealing() {
+            if (currentWorkloads.length === 0) return;
+            const targetId = currentWorkloads[0].workload_id;
 
             const resp = await fetch('/api/self-heal', {
                 method: 'POST',
@@ -437,7 +439,7 @@ DASHBOARD_HTML = """
 
             const record = await resp.json();
             renderTimeline(record);
-            await fetchContainers();
+            await fetchWorkloads();
         }
 
         function renderTimeline(record) {
@@ -458,8 +460,8 @@ DASHBOARD_HTML = """
         }
 
         async function openCisoModal() {
-            if (currentContainers.length === 0) return;
-            const targetId = currentContainers[0].container_id;
+            if (currentWorkloads.length === 0) return;
+            const targetId = currentWorkloads[0].workload_id;
 
             const resp = await fetch(`/api/ciso-report/${targetId}`);
             const report = await resp.json();
@@ -483,8 +485,8 @@ DASHBOARD_HTML = """
             document.getElementById('modal-overlay').style.display = 'none';
         }
 
-        fetchContainers();
-        setInterval(fetchContainers, 3000);
+        fetchWorkloads();
+        setInterval(fetchWorkloads, 2000);
     </script>
 </body>
 </html>
@@ -496,32 +498,25 @@ async def get_dashboard():
 
 @app.get("/api/containers")
 async def get_containers():
-    containers = docker_daemon.get_real_containers()
-    for c in containers:
-        ebpf_events = ebpf_sensor.capture_ebpf_kernel_events(c["container_id"], c["processes"])
-        c["ebpf_events"] = ebpf_events
-    return containers
+    workloads = system_sensor.get_live_system_workloads()
+    return workloads
 
 @app.post("/api/launch-container")
 async def launch_container():
-    return docker_daemon.launch_real_test_container()
+    return system_sensor.launch_real_workload()
 
 @app.post("/api/simulate-attack")
 async def simulate_attack(req: AttackModel):
-    return docker_daemon.inject_real_attack(req.container_id, req.attack_type)
+    return system_sensor.inject_real_threat(req.container_id, req.attack_type)
 
 @app.post("/api/self-heal")
 async def self_heal(req: HealModel):
-    cntrs = docker_daemon.get_real_containers()
-    target = next((c for c in cntrs if c["container_id"] == req.container_id or c["name"] == req.container_id), {})
-    proc_str = " ".join(target.get("processes", []))
-    res = playbook_engine.execute_falcon_playbooks(req.container_id, proc_str)
-    return res
+    return system_sensor.execute_real_self_healing(req.container_id)
 
 @app.get("/api/ciso-report/{container_id}")
 async def get_ciso_report(container_id: str):
-    cntrs = docker_daemon.get_real_containers()
-    target = next((c for c in cntrs if c["container_id"] == container_id or c["name"] == container_id), {})
+    workloads = system_sensor.get_live_system_workloads()
+    target = next((w for w in workloads if w["workload_id"] == container_id or w["name"] == container_id), {})
     proc_str = " ".join(target.get("processes", []))
     mitre_info = mitre_mapper.map_threat_to_mitre(proc_str)
     incident_data = {
